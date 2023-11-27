@@ -122,10 +122,10 @@ def evaluate(config, epoch, pipeline):
 
 @dataclass
 class TrainingConfig:
-    image_size = 256  # the generated image resolution
-    train_batch_size = 32
+    image_size = 128  # the generated image resolution
+    train_batch_size = 64
     eval_batch_size = 16  # how many images to sample during evaluation
-    num_epochs = 1000
+    num_epochs = 400
     gradient_accumulation_steps = 1
     learning_rate = 1e-4
     lr_warmup_steps = 500
@@ -166,30 +166,25 @@ model = UNet2DModel(
     in_channels=3,  # the number of input channels, 3 for RGB images
     out_channels=3,  # the number of output channels
     layers_per_block=2,  # how many ResNet layers to use per UNet block
-    block_out_channels=(128, 128, 256, 256, 512, 512),  # the number of output channels for each UNet block
+    block_out_channels=(128, 256, 512, 1024, 1024),  # the number of output channels for each UNet block
     down_block_types=(
-        "DownBlock2D",  # a regular ResNet downsampling block
-        "DownBlock2D",
-        "DownBlock2D",
-        "DownBlock2D",
+        "DownBlock2D",      # a regular ResNet downsampling block
+        "AttnDownBlock2D",
+        "AttnDownBlock2D",
         "AttnDownBlock2D",  # a ResNet downsampling block with spatial self-attention
         "DownBlock2D",
     ),
     up_block_types=(
         "UpBlock2D",  # a regular ResNet upsampling block
         "AttnUpBlock2D",  # a ResNet upsampling block with spatial self-attention
-        "UpBlock2D",
-        "UpBlock2D",
-        "UpBlock2D",
+        "AttnUpBlock2D",
+        "AttnUpBlock2D",
         "UpBlock2D",
     ),
 )
 
 sample_image = dataset[0]["images"].unsqueeze(0)
-print("Input shape:", sample_image.shape)
-
-print("Output shape:", model(sample_image, timestep=0).sample.shape)
-
+print("Dataset image:", sample_image.shape)
 
 noise_scheduler = DDPMScheduler(num_train_timesteps=1000)
 noise = torch.randn(sample_image.shape)
